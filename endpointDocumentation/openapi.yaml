@@ -1,0 +1,414 @@
+openapi: 3.0.0
+info:
+  title: Article Management API
+  description: API for managing articles and categories with authentication
+  version: 1.0.0
+servers:
+  - url: http://localhost:3000
+    description: Development server
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Category:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "8b4ac7b7-fcb9-4e68-8a4e-a2e20377ce8b"
+        name:
+          type: string
+          example: "Science Biology"
+    Article:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "cc13742e-55f3-47ae-9848-8b95f0e61eaa"
+        title:
+          type: string
+          example: "How fast your brain ages is affected by these 64 genes"
+        content:
+          type: string
+          example: "The study, published1 in Science Advances on 12 March, also pinpointed 13 potential drugs..."
+        categoryId:
+          type: string
+          format: uuid
+          example: "a674eccd-edfe-4b29-81aa-d1e5d453fe2e"
+        userId:
+          type: string
+          example: "cm885ajy400009r21hw20bv66"
+        createdAt:
+          type: string
+          format: date-time
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "cm885ajy400009r21hw20bv66"
+        username:
+          type: string
+          example: "admin"
+        role:
+          type: string
+          enum: [Admin, User]
+          example: "Admin"
+    LoginRequest:
+      type: object
+      required:
+        - username
+        - password
+      properties:
+        username:
+          type: string
+          example: "admin"
+        password:
+          type: string
+          example: "123456"
+    RegisterRequest:
+      type: object
+      required:
+        - username
+        - password
+        - role
+      properties:
+        username:
+          type: string
+          example: "admin"
+        password:
+          type: string
+          example: "123456"
+        role:
+          type: string
+          enum: [Admin, User]
+          example: "Admin"
+    LoginResponse:
+      type: object
+      properties:
+        token:
+          type: string
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+paths:
+  /categories:
+    get:
+      summary: Get all categories
+      operationId: getCategories
+      responses:
+        '200':
+          description: List of categories
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Category'
+    post:
+      summary: Create a new category
+      operationId: createCategory
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                  example: "Science Chemical"
+      responses:
+        '201':
+          description: Category created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+        '401':
+          description: Unauthorized
+  /categories/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Category ID
+        schema:
+          type: string
+          format: uuid
+    get:
+      summary: Get category by ID
+      operationId: getCategoryById
+      responses:
+        '200':
+          description: Category details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+        '404':
+          description: Category not found
+    put:
+      summary: Update a category
+      operationId: updateCategory
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                  example: "Programming Technique"
+      responses:
+        '200':
+          description: Category updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+        '401':
+          description: Unauthorized
+        '404':
+          description: Category not found
+    delete:
+      summary: Delete a category
+      operationId: deleteCategory
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: Category deleted successfully
+        '401':
+          description: Unauthorized
+        '404':
+          description: Category not found
+  /articles:
+    get:
+      summary: Get all articles with optional filtering and sorting
+      operationId: getArticles
+      parameters:
+        - name: articleId
+          in: query
+          description: Filter by article ID
+          schema:
+            type: string
+            format: uuid
+        - name: title
+          in: query
+          description: Filter by title (partial match)
+          schema:
+            type: string
+        - name: userId
+          in: query
+          description: Filter by user ID
+          schema:
+            type: string
+        - name: category
+          in: query
+          description: Filter by category name
+          schema:
+            type: string
+        - name: createdAtStart
+          in: query
+          description: Filter by creation date (start)
+          schema:
+            type: string
+            format: date
+        - name: createdAtEnd
+          in: query
+          description: Filter by creation date (end)
+          schema:
+            type: string
+            format: date
+        - name: sortBy
+          in: query
+          description: Field to sort by
+          schema:
+            type: string
+            enum: [title, createdAt, articleLength]
+        - name: order
+          in: query
+          description: Sort order
+          schema:
+            type: string
+            enum: [asc, desc]
+      responses:
+        '200':
+          description: List of articles
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Article'
+    post:
+      summary: Create a new article
+      operationId: createArticle
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - title
+                - content
+                - categoryId
+              properties:
+                title:
+                  type: string
+                  example: "How fast your brain ages is affected by these 64 genes"
+                content:
+                  type: string
+                  example: "The study, published1 in Science Advances on 12 March..."
+                categoryId:
+                  type: string
+                  format: uuid
+                  example: "a674eccd-edfe-4b29-81aa-d1e5d453fe2e"
+      responses:
+        '201':
+          description: Article created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Article'
+        '401':
+          description: Unauthorized
+  /articles/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Article ID
+        schema:
+          type: string
+          format: uuid
+    get:
+      summary: Get article by ID
+      operationId: getArticleById
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Article details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Article'
+        '401':
+          description: Unauthorized
+        '404':
+          description: Article not found
+    put:
+      summary: Update an article
+      operationId: updateArticle
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - title
+                - content
+                - categoryId
+              properties:
+                title:
+                  type: string
+                  example: "How important Laravel is in Programming World?"
+                content:
+                  type: string
+                  example: "Blade is a simple, yet powerful templating engine provided with Laravel..."
+                categoryId:
+                  type: string
+                  format: uuid
+                  example: "8b4ac7b7-fcb9-4e68-8a4e-a2e20377ce8b"
+      responses:
+        '200':
+          description: Article updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Article'
+        '401':
+          description: Unauthorized
+        '404':
+          description: Article not found
+    delete:
+      summary: Delete an article
+      operationId: deleteArticle
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: Article deleted successfully
+        '401':
+          description: Unauthorized
+        '404':
+          description: Article not found
+  /api/auth/login:
+    post:
+      summary: Login to get authentication token
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          description: Invalid credentials
+  /api/auth/register:
+    post:
+      summary: Register a new user
+      operationId: register
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: User registered successfully
+        '400':
+          description: Invalid request or username already exists
+  /api/auth/profile:
+    get:
+      summary: Get current user profile
+      operationId: getProfile
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          description: Unauthorized
